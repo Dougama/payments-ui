@@ -12,6 +12,10 @@ export function HomePage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showCancelButton, setShowCancelButton] = useState(false);
+
+  // Temporal: para probar el botón, descomenta la siguiente línea
+  // useEffect(() => { setShowCancelButton(true); setError("Ya existe un pago en proceso. Puedes cancelarlo si deseas iniciar uno nuevo."); }, []);
 
   const handleStartTest = async () => {
     if (!user) {
@@ -21,9 +25,10 @@ export function HomePage() {
 
     setError("");
     setLoading(true);
+    setShowCancelButton(false);
 
     try {
-      // Get product data
+      // Get product data - this also validates payment status
       const productResponse = await paymentService.getProduct(
         env.get("TEST_PRODUCT_SKU"),
         user.uid,
@@ -41,8 +46,50 @@ export function HomePage() {
           state: { product: productResponse.product },
         });
       } else {
-        // No payment required (100% discount)
-        setError("El producto tiene 100% de descuento. No se requiere pago.");
+        // No payment required (100% discount or already paid)
+        setError(
+          "El producto tiene 100% de descuento o ya fue pagado. No se requiere pago."
+        );
+      }
+    } catch (err: any) {
+      console.error("Error en handleStartTest:", err);
+      const errorMessage = getErrorMessage(err);
+
+      // Check if it's a payment in progress error
+      if (err.status === 409 || errorMessage.includes("pago en proceso")) {
+        setShowCancelButton(true);
+        setError(
+          "Ya existe un pago en proceso. Puedes cancelarlo si deseas iniciar uno nuevo."
+        );
+      } else {
+        setError(errorMessage);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelPayment = async () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    setError("");
+    setLoading(true);
+
+    try {
+      const response = await paymentService.cancelTransaction(user.uid);
+
+      if (response.success) {
+        setShowCancelButton(false);
+        setError("");
+        // Show success message and allow new test
+        alert(
+          "Pago cancelado exitosamente. Ahora puedes iniciar un nuevo test."
+        );
+      } else {
+        throw new Error(response.message || "Error al cancelar el pago");
       }
     } catch (err) {
       setError(getErrorMessage(err));
@@ -71,14 +118,47 @@ export function HomePage() {
             </div>
           )}
 
-          <button
-            onClick={handleStartTest}
-            className="btn btn-primary"
-            disabled={loading}
-            style={{ fontSize: "1.25rem", padding: "1rem 2rem" }}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "1rem",
+              alignItems: "center",
+              marginTop: "2rem",
+            }}
           >
-            {loading ? <span className="spinner" /> : "Iniciar el test"}
-          </button>
+            <button
+              onClick={handleStartTest}
+              className="btn btn-primary"
+              disabled={loading}
+              style={{
+                fontSize: "1.25rem",
+                padding: "1rem 2rem",
+                minWidth: "250px",
+              }}
+            >
+              {loading ? <span className="spinner" /> : "Iniciar el test"}
+            </button>
+
+            {showCancelButton && (
+              <button
+                onClick={handleCancelPayment}
+                className="btn btn-danger"
+                disabled={loading}
+                style={{
+                  fontSize: "1rem",
+                  padding: "0.75rem 1.5rem",
+                  minWidth: "250px",
+                }}
+              >
+                {loading ? (
+                  <span className="spinner" />
+                ) : (
+                  "Cancelar pago en proceso"
+                )}
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         <div className="mt-4">

@@ -68,6 +68,7 @@ export interface ProductResponse {
   payment: boolean;
   product?: Product;
   error?: string;
+  message?: string;
 }
 
 export interface TransactionCheckRequest {

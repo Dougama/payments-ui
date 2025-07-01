@@ -37,9 +37,9 @@ class ApiClient {
   ): Promise<T> {
     const { skipAuth = false, headers = {}, ...restOptions } = options;
 
-    const requestHeaders: HeadersInit = {
+    const requestHeaders: Record<string, string> = {
       "Content-Type": "application/json",
-      ...headers,
+      ...(headers as Record<string, string>),
     };
 
     if (!skipAuth) {
@@ -62,6 +62,7 @@ class ApiClient {
       const data = await response.json();
 
       if (!response.ok) {
+        console.error("API Error Response:", { status: response.status, data });
         throw {
           status: response.status,
           message: data.error || data.message || "Request failed",

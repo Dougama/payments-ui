@@ -25,14 +25,26 @@ export function PaymentPage() {
 
     // Load Wompi script
     const script = document.createElement("script");
+    script.type = "text/javascript";
     script.src = "https://checkout.wompi.co/widget.js";
     script.async = true;
-    script.onload = () => setScriptLoaded(true);
-    script.onerror = () => setError("Error al cargar el widget de pago");
-    document.body.appendChild(script);
+    script.onload = () => {
+      console.log("Wompi widget script loaded successfully");
+      setScriptLoaded(true);
+    };
+    script.onerror = () => {
+      console.error("Failed to load Wompi widget script");
+      setError("Error al cargar el widget de pago");
+    };
+
+    // Add to head instead of body
+    document.head.appendChild(script);
 
     return () => {
-      document.body.removeChild(script);
+      // Remove from head
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
     };
   }, [paymentData, navigate]);
 
@@ -44,40 +56,76 @@ export function PaymentPage() {
 
   const initializeWidget = () => {
     try {
-      const checkout = new window.WidgetCheckout({
-        currency: paymentData.widgetConfig.currency,
-        amountInCents: paymentData.widgetConfig.amountInCents,
-        reference: paymentData.widgetConfig.reference,
-        publicKey: paymentData.widgetConfig.publicKey,
+      console.log(
+        "Initializing Wompi widget with config:",
+        paymentData.widgetConfig
+      );
+
+      // Verificar que tenemos los datos mínimos necesarios
+      if (!paymentData.widgetConfig.publicKey) {
+        throw new Error("No se encontró la clave pública de Wompi");
+      }
+
+      if (!paymentData.widgetConfig.signature?.integrity) {
+        throw new Error("No se encontró la firma de integridad");
+      }
+
+      // Limpiar y formatear los datos correctamente
+      const publicKey = paymentData.widgetConfig.publicKey; //.replace(/['"]/g, ""); // Remover comillas
+      const amountInCents = parseInt(
+        paymentData.widgetConfig.amountInCents.toString()
+      ); // Asegurar que sea número
+      const reference = paymentData.widgetConfig.reference.replace(/['"]/g, ""); // Remover comillas
+      const integrity = paymentData.widgetConfig.signature.integrity.replace(
+        /['"]/g,
+        ""
+      ); // Remover comillas
+
+      // Construir solo con los campos obligatorios primero
+      const widgetData = {
+        currency: "COP",
+        amountInCents: amountInCents,
+        reference: reference,
+        publicKey: publicKey,
         signature: {
-          integrity: paymentData.widgetConfig.signature.integrity,
+          integrity: integrity,
         },
-        redirectUrl: `${window.location.origin}/payment-result`,
-        customerData: paymentData.widgetConfig.customerData,
-        shippingAddress: paymentData.widgetConfig.shippingAddress,
-      });
+      };
+
+      console.log("Widget data cleaned:", widgetData);
+
+      const checkout = new window.WidgetCheckout(widgetData);
 
       checkout.open((result: any) => {
-        const transaction = result.transaction;
+        console.log("Wompi transaction result:", result);
 
-        if (transaction) {
+        if (result && result.transaction) {
           // Save transaction data
           updatePaymentData({
-            transactionId: transaction.id,
-            reference: transaction.reference,
+            transactionId: result.transaction.id,
+            reference: result.transaction.reference,
           });
 
           // Redirect to result page
           navigate("/payment-result", {
-            state: { transaction },
+            state: { transaction: result.transaction },
           });
         } else {
-          setError("Transacción cancelada o no completada");
+          // El usuario cerró el widget sin completar el pago
+          console.log("Payment cancelled by user");
+          setError("Pago cancelado por el usuario");
+          setTimeout(() => {
+            navigate("/");
+          }, 3000);
         }
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error initializing widget:", err);
-      setError("Error al inicializar el widget de pago");
+      setError(
+        `Error al inicializar el widget de pago: ${
+          err.message || "Error desconocido"
+        }`
+      );
     }
   };
 

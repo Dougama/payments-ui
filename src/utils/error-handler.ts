@@ -54,8 +54,8 @@ export function handleApiError(error: any): AppError {
         );
       case 409:
         return new AppError(
-          error.message || "Conflicto con el estado actual",
-          "CONFLICT",
+          error.message || "Ya existe un pago en proceso",
+          "PAYMENT_IN_PROGRESS",
           409,
           error.data
         );

@@ -21,10 +21,9 @@ class Environment {
   private constructor() {
     this.config = {
       API_BASE_URL:
-        import.meta.env.VITE_API_BASE_URL || "http://localhost:3100",
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:8080",
       WOMPI_PUBLIC_KEY: import.meta.env.VITE_WOMPI_PUBLIC_KEY || "",
-      TEST_PRODUCT_SKU:
-        import.meta.env.VITE_TEST_PRODUCT_SKU || "TU-CARRERA-001",
+      TEST_PRODUCT_SKU: import.meta.env.VITE_TEST_PRODUCT_SKU,
       TEST_COUPON_CODE: import.meta.env.VITE_TEST_COUPON_CODE,
       FIREBASE_CONFIG: {
         apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
