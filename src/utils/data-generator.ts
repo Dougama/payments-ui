@@ -1,4 +1,5 @@
 // src/utils/data-generator.ts
+import { env } from "@/config/environment";
 import faker from "faker";
 
 // Set locale to Spanish (Colombia)
@@ -51,7 +52,7 @@ export class DataGenerator {
 
     return {
       email: faker.internet.email(firstName, lastName).toLowerCase(),
-      password: "Test123!@#", // Fixed password for testing
+      password: env.get("DEFAULT_PWD"), // Fixed password for testing
       fullName: `${firstName} ${lastName}`,
       phoneNumber: this.generateColombianPhone(),
       legalId: this.generateLegalId(legalIdType),
@@ -70,7 +71,7 @@ export class DataGenerator {
       city: cityData.city,
       region: cityData.region,
       phoneNumber: this.generateColombianPhone(),
-      country: "Colombia",
+      country: "CO",
     };
   }
 

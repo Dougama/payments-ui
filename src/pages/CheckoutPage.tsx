@@ -9,6 +9,7 @@ import { Alert } from "@/components/common/Alert";
 import { getErrorMessage } from "@/utils/error-handler";
 import { CheckoutRequest } from "@/types/payment.types";
 import { env } from "@/config/environment";
+import { userDataStore } from "@/utils/user-data-store";
 
 export function CheckoutPage() {
   const navigate = useNavigate();
@@ -96,6 +97,11 @@ export function CheckoutPage() {
     try {
       if (!user) {
         throw new Error("Usuario no autenticado");
+      }
+
+      // Guardar datos del usuario para futuras compras
+      if (user) {
+        userDataStore.saveUserData(user.uid, formData.customerData);
       }
 
       const response = await paymentService.checkout(user.uid, formData);

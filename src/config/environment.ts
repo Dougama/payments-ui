@@ -12,6 +12,7 @@ interface EnvironmentConfig {
     messagingSenderId: string;
     appId: string;
   };
+  DEFAULT_PWD: string;
 }
 
 class Environment {
@@ -21,9 +22,10 @@ class Environment {
   private constructor() {
     this.config = {
       API_BASE_URL:
-        import.meta.env.VITE_API_BASE_URL || "http://localhost:8080",
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:3100",
       WOMPI_PUBLIC_KEY: import.meta.env.VITE_WOMPI_PUBLIC_KEY || "",
-      TEST_PRODUCT_SKU: import.meta.env.VITE_TEST_PRODUCT_SKU,
+      TEST_PRODUCT_SKU:
+        import.meta.env.VITE_TEST_PRODUCT_SKU || "TU-CARRERA-001",
       TEST_COUPON_CODE: import.meta.env.VITE_TEST_COUPON_CODE,
       FIREBASE_CONFIG: {
         apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
@@ -34,6 +36,7 @@ class Environment {
           import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
         appId: import.meta.env.VITE_FIREBASE_APP_ID || "",
       },
+      DEFAULT_PWD: import.meta.env.VITE_DEFAULT_PWD,
     };
 
     this.validateConfig();

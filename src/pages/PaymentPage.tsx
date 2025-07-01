@@ -1,9 +1,10 @@
 // src/pages/PaymentPage.tsx
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePayment } from "@/contexts/PaymentContext";
 import { Alert } from "@/components/common/Alert";
-import { env } from "@/config/environment";
+import { userDataStore } from "@/utils/user-data-store";
+import { useAuth } from "@/contexts/AuthContext";
 
 declare global {
   interface Window {
@@ -12,6 +13,8 @@ declare global {
 }
 
 export function PaymentPage() {
+  const { user } = useAuth();
+
   const navigate = useNavigate();
   const { paymentData, updatePaymentData } = usePayment();
   const [error, setError] = useState("");
@@ -71,7 +74,7 @@ export function PaymentPage() {
       }
 
       // Limpiar y formatear los datos correctamente
-      const publicKey = paymentData.widgetConfig.publicKey; //.replace(/['"]/g, ""); // Remover comillas
+      const publicKey = paymentData.widgetConfig.publicKey.replace(/['"]/g, ""); // Remover comillas
       const amountInCents = parseInt(
         paymentData.widgetConfig.amountInCents.toString()
       ); // Asegurar que sea número
@@ -82,7 +85,7 @@ export function PaymentPage() {
       ); // Remover comillas
 
       // Construir solo con los campos obligatorios primero
-      const widgetData = {
+      const widgetData: any = {
         currency: "COP",
         amountInCents: amountInCents,
         reference: reference,
@@ -90,9 +93,33 @@ export function PaymentPage() {
         signature: {
           integrity: integrity,
         },
+        // IMPORTANTE: Usar la URL que viene del backend
+        redirectUrl: `${window.location.origin}/payment-result`,
       };
 
+      // Si tenemos datos del cliente, agregarlos
+      if (paymentData.widgetConfig.customerData) {
+        widgetData.customerData = paymentData.widgetConfig.customerData;
+      }
+
+      // Si tenemos dirección de envío, agregarla
+      if (paymentData.widgetConfig.shippingAddress) {
+        widgetData.shippingAddress = paymentData.widgetConfig.shippingAddress;
+      }
+
+      // Guardar la referencia en el store antes de abrir el widget
+      if (user && reference) {
+        userDataStore.saveUserData(user.uid, {
+          lastPaymentReference: reference,
+        });
+      }
+
       console.log("Widget data cleaned:", widgetData);
+
+      // Guardar la referencia antes de abrir el widget para recuperarla después
+      if (widgetData.reference) {
+        sessionStorage.setItem("payment_reference", widgetData.reference);
+      }
 
       const checkout = new window.WidgetCheckout(widgetData);
 
@@ -103,10 +130,13 @@ export function PaymentPage() {
           // Save transaction data
           updatePaymentData({
             transactionId: result.transaction.id,
-            reference: result.transaction.reference,
+            reference:
+              result.transaction.reference ||
+              paymentData.widgetConfig.reference,
           });
 
-          // Redirect to result page
+          // Si Wompi redirecciona automáticamente, esto puede no ejecutarse
+          // pero lo dejamos por si acaso
           navigate("/payment-result", {
             state: { transaction: result.transaction },
           });
@@ -121,11 +151,8 @@ export function PaymentPage() {
       });
     } catch (err: any) {
       console.error("Error initializing widget:", err);
-      setError(
-        `Error al inicializar el widget de pago: ${
-          err.message || "Error desconocido"
-        }`
-      );
+      const errorMessage = err?.message || "Error desconocido";
+      setError(`Error al inicializar el widget de pago: ${errorMessage}`);
     }
   };
 

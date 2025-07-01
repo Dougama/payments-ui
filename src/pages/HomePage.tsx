@@ -107,6 +107,7 @@ export function HomePage() {
           <p className="text-muted mb-4">
             Hola {user.email}, estás listo para iniciar el test de pago.
           </p>
+          <p className="text-muted mb-4">User id: {user.uid}</p>
 
           {error && (
             <div style={{ maxWidth: "500px", margin: "0 auto" }}>

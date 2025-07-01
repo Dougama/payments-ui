@@ -47,6 +47,17 @@ export class PaymentService {
     );
   }
 
+  async getPaymentReference(userId: string): Promise<{
+    success: boolean;
+    data?: {
+      reference: string;
+      userId: string;
+    };
+    error?: string;
+  }> {
+    return apiClient.get(`/payments/users/${userId}/reference`);
+  }
+
   async simulateWebhook(webhookData: WompiWebhookEvent): Promise<any> {
     // For testing, we'll send this to the webhook endpoint
     // In real environment, this would come from Wompi directly
