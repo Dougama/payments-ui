@@ -43,7 +43,7 @@ export function CheckoutPage() {
       city: "",
       region: "",
       country: "Colombia",
-      phoneNumber: "",
+      phoneNumber: "", // Agregado phoneNumber
     },
   });
 
@@ -227,13 +227,17 @@ export function CheckoutPage() {
         throw new Error("Usuario no autenticado");
       }
 
-      // Concatenar firstName y lastName para crear fullName antes de enviar
+      // Preparar datos para el checkout - aquí SÍ enviamos firstName y lastName
       const checkoutData = {
         ...formData,
         customerData: {
           ...formData.customerData,
           fullName:
             `${formData.customerData.firstName} ${formData.customerData.lastName}`.trim(),
+        },
+        shippingAddress: {
+          ...formData.shippingAddress,
+          phoneNumber: formData.customerData.phoneNumber, // Copiar el phoneNumber a shippingAddress
         },
         coupon_code: couponApplied ? couponCode : undefined,
       };
@@ -521,7 +525,7 @@ export function CheckoutPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="region">
+            <label className="form-label" htmlFor="department">
               Departamento *
             </label>
             <input

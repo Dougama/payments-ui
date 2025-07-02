@@ -5,6 +5,8 @@ import { env } from "@/config/environment";
 export interface GeneratedUserData {
   email: string;
   password: string;
+  firstName: string;
+  lastName: string;
   fullName: string;
   phoneNumber: string;
   legalId: string;
@@ -14,9 +16,8 @@ export interface GeneratedUserData {
 export interface GeneratedAddressData {
   addressLine1: string;
   city: string;
-  region: string;
+  region: string; // Cambiado de department a region
   country: string;
-  phoneNumber: string;
 }
 
 export class DataGenerator {
@@ -42,6 +43,7 @@ export class DataGenerator {
   static generateUserData(): GeneratedUserData {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
+    const fullName = `${firstName} ${lastName}`;
     const legalIdType = faker.helpers.arrayElement(
       this.legalIdTypes.filter((type) => type !== "NIT")
     );
@@ -49,7 +51,9 @@ export class DataGenerator {
     return {
       email: faker.internet.email({ firstName, lastName }).toLowerCase(),
       password: env.get("DEFAULT_PWD"), // Get password from environment variable
-      fullName: `${firstName} ${lastName}`,
+      firstName,
+      lastName,
+      fullName,
       phoneNumber: this.generateColombianPhone(),
       legalId: this.generateLegalId(legalIdType),
       legalIdType,
@@ -65,9 +69,8 @@ export class DataGenerator {
         max: 200,
       })}-${faker.number.int({ min: 1, max: 99 })}`,
       city: cityData.city,
-      region: cityData.region,
+      region: cityData.region, // Ya no necesita cambio, usa region correctamente
       country: "CO",
-      phoneNumber: this.generateColombianPhone().toString(),
     };
   }
 
@@ -78,6 +81,8 @@ export class DataGenerator {
     return {
       customerData: {
         email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
         fullName: userData.fullName,
         phoneNumber: userData.phoneNumber,
         phoneNumberPrefix: "+57",
@@ -118,6 +123,8 @@ export class DataGenerator {
     return {
       customerData: {
         email: faker.internet.email({ firstName: companyName }).toLowerCase(),
+        firstName: companyName,
+        lastName: "SAS",
         fullName: `${companyName} SAS`,
         phoneNumber: this.generateColombianPhone(),
         phoneNumberPrefix: "+57",

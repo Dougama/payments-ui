@@ -14,7 +14,6 @@ declare global {
 
 export function PaymentPage() {
   const { user } = useAuth();
-
   const navigate = useNavigate();
   const { paymentData, updatePaymentData } = usePayment();
   const [error, setError] = useState("");
@@ -97,9 +96,12 @@ export function PaymentPage() {
         redirectUrl: `${window.location.origin}/payment-result`,
       };
 
-      // Si tenemos datos del cliente, agregarlos
+      // Si tenemos datos del cliente, agregarlos PERO FILTRAR firstName y lastName
       if (paymentData.widgetConfig.customerData) {
-        widgetData.customerData = paymentData.widgetConfig.customerData;
+        // Desestructurar para excluir firstName y lastName
+        const { firstName, lastName, ...customerDataForWidget } = paymentData
+          .widgetConfig.customerData as any;
+        widgetData.customerData = customerDataForWidget;
       }
 
       // Si tenemos dirección de envío, agregarla

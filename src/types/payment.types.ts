@@ -18,9 +18,9 @@ export interface Product {
 
 export interface CustomerData {
   email: string;
-  firstName?: string;
-  lastName?: string;
-  fullName?: string;
+  firstName?: string; // Solo para el formulario
+  lastName?: string; // Solo para el formulario
+  fullName: string; // Requerido para Wompi
   phoneNumber: string;
   phoneNumberPrefix?: string;
   legalId: string;
@@ -33,8 +33,8 @@ export interface ShippingAddress {
   city: string;
   region: string;
   country: string;
+  phoneNumber?: string; // Agregado phoneNumber
   postalCode?: string;
-  phoneNumber: string;
 }
 
 export interface CheckoutRequest {
