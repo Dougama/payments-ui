@@ -18,7 +18,9 @@ export interface Product {
 
 export interface CustomerData {
   email: string;
-  fullName: string;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
   phoneNumber: string;
   phoneNumberPrefix?: string;
   legalId: string;
@@ -29,9 +31,10 @@ export interface ShippingAddress {
   addressLine1?: string;
   addressLine2?: string;
   city: string;
-  department: string;
+  region: string;
   country: string;
   postalCode?: string;
+  phoneNumber: string;
 }
 
 export interface CheckoutRequest {

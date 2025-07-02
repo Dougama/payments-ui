@@ -14,8 +14,9 @@ export interface GeneratedUserData {
 export interface GeneratedAddressData {
   addressLine1: string;
   city: string;
-  department: string;
+  region: string;
   country: string;
+  phoneNumber: string;
 }
 
 export class DataGenerator {
@@ -64,8 +65,9 @@ export class DataGenerator {
         max: 200,
       })}-${faker.number.int({ min: 1, max: 99 })}`,
       city: cityData.city,
-      department: cityData.region,
+      region: cityData.region,
       country: "CO",
+      phoneNumber: this.generateColombianPhone().toString(),
     };
   }
 

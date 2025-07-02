@@ -30,6 +30,8 @@ export function CheckoutPage() {
     coupon_code: undefined,
     customerData: {
       email: "",
+      firstName: "",
+      lastName: "",
       fullName: "",
       phoneNumber: "",
       phoneNumberPrefix: "+57",
@@ -39,8 +41,9 @@ export function CheckoutPage() {
     shippingAddress: {
       addressLine1: "",
       city: "",
-      department: "",
+      region: "",
       country: "Colombia",
+      phoneNumber: "",
     },
   });
 
@@ -61,20 +64,37 @@ export function CheckoutPage() {
       // Generar datos aleatorios para el resto
       const generatedData = DataGenerator.generateCheckoutData();
 
+      // Separar el fullName generado en firstName y lastName
+      const nameParts = generatedData.customerData.fullName.split(" ");
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+
       setFormData((prev) => ({
         ...prev,
         customerData: {
           ...generatedData.customerData,
           email: userEmail, // Usar el email del usuario autenticado
+          firstName,
+          lastName,
         },
         shippingAddress: generatedData.shippingAddress,
       }));
     } else {
       // Si no hay email, generar todo aleatoriamente
       const generatedData = DataGenerator.generateCheckoutData();
+
+      // Separar el fullName generado en firstName y lastName
+      const nameParts = generatedData.customerData.fullName.split(" ");
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+
       setFormData((prev) => ({
         ...prev,
-        customerData: generatedData.customerData,
+        customerData: {
+          ...generatedData.customerData,
+          firstName,
+          lastName,
+        },
         shippingAddress: generatedData.shippingAddress,
       }));
     }
@@ -108,11 +128,18 @@ export function CheckoutPage() {
     const generatedData = DataGenerator.generateCheckoutData();
     const userEmail = user?.email || generatedData.customerData.email;
 
+    // Separar el fullName generado en firstName y lastName
+    const nameParts = generatedData.customerData.fullName.split(" ");
+    const firstName = nameParts[0] || "";
+    const lastName = nameParts.slice(1).join(" ") || "";
+
     setFormData((prev) => ({
       ...prev,
       customerData: {
         ...generatedData.customerData,
         email: userEmail, // Asegurar que siempre sea string
+        firstName,
+        lastName,
       },
       shippingAddress: generatedData.shippingAddress,
     }));
@@ -200,45 +227,49 @@ export function CheckoutPage() {
         throw new Error("Usuario no autenticado");
       }
 
-      // Guardar datos del usuario para futuras compras
+      // Concatenar firstName y lastName para crear fullName antes de enviar
+      const checkoutData = {
+        ...formData,
+        customerData: {
+          ...formData.customerData,
+          fullName:
+            `${formData.customerData.firstName} ${formData.customerData.lastName}`.trim(),
+        },
+        coupon_code: couponApplied ? couponCode : undefined,
+      };
+
+      // Guardar datos del usuario para futuras compras (con firstName y lastName separados)
       if (user) {
         userDataStore.saveUserData(user.uid, formData.customerData);
       }
 
-      const response = await paymentService.checkout(user.uid, {
-        ...formData,
-        coupon_code: couponApplied ? couponCode : undefined,
-      });
-
-      console.log("Checkout response:", response);
+      const response = await paymentService.checkout(user.uid, checkoutData);
 
       if (!response.success) {
-        throw new Error(response.error || "Error al procesar checkout");
+        throw new Error(response.error || "Error al procesar el pago");
       }
 
-      if (!response.data) {
-        throw new Error("No se recibieron datos de configuración del widget");
-      }
+      if (response.data) {
+        // Update payment context
+        updatePaymentData({
+          widgetConfig: response.data,
+          productData: discountedProduct,
+        });
 
-      // Save payment data to context
-      updatePaymentData({
-        widgetConfig: response.data,
-        productData: discountedProduct, // Usar el producto con descuento
-        checkoutData: {
-          ...formData,
-          coupon_code: couponApplied ? couponCode : undefined,
-        },
-      });
-
-      // También guardar la referencia en el store para recuperarla después
-      if (response.data?.reference) {
-        userDataStore.saveUserData(user.uid, {
-          lastPaymentReference: response.data.reference,
+        // Redirect to payment page
+        navigate("/payment");
+      } else {
+        // No payment needed (100% discount)
+        navigate("/payment-result", {
+          state: {
+            transaction: {
+              status: "APPROVED",
+              reference: checkoutData.customerData.fullName,
+              id: `test-${Date.now()}`,
+            },
+          },
         });
       }
-
-      // Redirect to payment page
-      navigate("/payment");
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -246,7 +277,7 @@ export function CheckoutPage() {
     }
   };
 
-  if (!product) {
+  if (!product || !user) {
     return null;
   }
 
@@ -254,28 +285,28 @@ export function CheckoutPage() {
     <div>
       <h1 className="text-center mb-4">Checkout</h1>
 
-      <div className="card mb-3">
+      {/* Información del producto */}
+      <div
+        className="card mb-3"
+        style={{ maxWidth: "600px", margin: "0 auto" }}
+      >
         <div className="card-header">
-          <h3 className="card-title">Producto</h3>
+          <h3 className="card-title">Resumen del pedido</h3>
         </div>
         <div>
-          <p>
-            <strong>{discountedProduct.name}</strong>
-          </p>
-
-          {/* Mostrar precio original y con descuento */}
-          {couponApplied && discountedProduct.discount > 0 ? (
+          <h4>{discountedProduct.name}</h4>
+          {discountedProduct.discount && discountedProduct.discount > 0 ? (
             <div>
-              <p style={{ textDecoration: "line-through", color: "#999" }}>
+              <p style={{ textDecoration: "line-through", color: "#666" }}>
                 Precio original: $
                 {originalProduct.total.toLocaleString("es-CO")} COP
               </p>
-              <p style={{ color: "var(--success-color)", fontWeight: "bold" }}>
+              <p className="text-success">
                 Precio con descuento: $
                 {discountedProduct.total.toLocaleString("es-CO")} COP
-              </p>
-              <p className="text-success">
-                ¡Descuento aplicado: {discountedProduct.discount}%!
+                <span className="badge badge-success ml-2">
+                  -{discountedProduct.discount}%
+                </span>
               </p>
             </div>
           ) : (
@@ -365,15 +396,30 @@ export function CheckoutPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="fullName">
-              Nombre completo *
+            <label className="form-label" htmlFor="firstName">
+              Nombre *
             </label>
             <input
-              id="fullName"
-              name="fullName"
+              id="firstName"
+              name="firstName"
               type="text"
               className="form-input"
-              value={formData.customerData.fullName}
+              value={formData.customerData.firstName}
+              onChange={handleCustomerDataChange}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="lastName">
+              Apellido *
+            </label>
+            <input
+              id="lastName"
+              name="lastName"
+              type="text"
+              className="form-input"
+              value={formData.customerData.lastName}
               onChange={handleCustomerDataChange}
               required
             />
@@ -479,26 +525,11 @@ export function CheckoutPage() {
               Departamento *
             </label>
             <input
-              id="department"
-              name="department"
+              id="region"
+              name="region"
               type="text"
               className="form-input"
-              value={formData.shippingAddress.department}
-              onChange={handleAddressChange}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label" htmlFor="shippingPhone">
-              Teléfono de contacto *
-            </label>
-            <input
-              id="shippingPhone"
-              name="phoneNumber"
-              type="tel"
-              className="form-input"
-              value={formData.customerData.phoneNumber}
+              value={formData.shippingAddress.region}
               onChange={handleAddressChange}
               required
             />
