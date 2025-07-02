@@ -1,10 +1,9 @@
 // src/pages/PaymentResultPage.tsx
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePayment } from "@/contexts/PaymentContext";
 import { paymentService } from "@/services/payment.service";
-import { userDataStore } from "@/utils/user-data-store";
 import { Alert } from "@/components/common/Alert";
 import { Loading } from "@/components/common/Loading";
 import { getErrorMessage } from "@/utils/error-handler";
@@ -19,7 +18,7 @@ export function PaymentResultPage() {
   const transaction = location.state?.transaction || {};
 
   const [loading, setLoading] = useState(false);
-  const [checkingTransaction, setCheckingTransaction] = useState(false);
+  const [, setCheckingTransaction] = useState(false);
   const [transactionStatus, setTransactionStatus] = useState<any>(null);
   const [webhookResponse, setWebhookResponse] = useState<any>(null);
   const [checkResponse, setCheckResponse] = useState<any>(null);
@@ -172,38 +171,6 @@ export function PaymentResultPage() {
       setSuccess("Webhook simulado exitosamente");
     } catch (err: any) {
       setError(`Error webhook: ${getErrorMessage(err)}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const checkTransaction = async () => {
-    if (!user) {
-      setError("Usuario no autenticado");
-      return;
-    }
-
-    setError("");
-    setSuccess("");
-    setLoading(true);
-
-    try {
-      const response = await paymentService.checkTransaction(user.uid, {
-        transactionId:
-          transactionIdFromUrl || paymentData.transactionId || transaction.id,
-        reference: paymentData.reference || transaction.reference,
-      });
-
-      setCheckResponse(response);
-
-      if (response.success) {
-        setTransactionStatus(response.data);
-        setSuccess(`Transacción verificada: ${response.data?.status}`);
-      } else {
-        setError(response.error || "Error al verificar transacción");
-      }
-    } catch (err) {
-      setError(`Error verificación: ${getErrorMessage(err)}`);
     } finally {
       setLoading(false);
     }

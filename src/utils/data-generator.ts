@@ -1,9 +1,6 @@
 // src/utils/data-generator.ts
+import { faker } from "@faker-js/faker/locale/es";
 import { env } from "@/config/environment";
-import faker from "faker";
-
-// Set locale to Spanish (Colombia)
-faker.locale = "es";
 
 export interface GeneratedUserData {
   email: string;
@@ -17,8 +14,7 @@ export interface GeneratedUserData {
 export interface GeneratedAddressData {
   addressLine1: string;
   city: string;
-  region: string;
-  phoneNumber: string;
+  department: string;
   country: string;
 }
 
@@ -40,19 +36,18 @@ export class DataGenerator {
     "CC",
     "CE",
     "NIT",
-    "PP",
   ];
 
   static generateUserData(): GeneratedUserData {
-    const firstName = faker.name.firstName();
-    const lastName = faker.name.lastName();
-    const legalIdType = faker.random.arrayElement(
+    const firstName = faker.person.firstName();
+    const lastName = faker.person.lastName();
+    const legalIdType = faker.helpers.arrayElement(
       this.legalIdTypes.filter((type) => type !== "NIT")
     );
 
     return {
-      email: faker.internet.email(firstName, lastName).toLowerCase(),
-      password: env.get("DEFAULT_PWD"), // Fixed password for testing
+      email: faker.internet.email({ firstName, lastName }).toLowerCase(),
+      password: env.get("DEFAULT_PWD"), // Get password from environment variable
       fullName: `${firstName} ${lastName}`,
       phoneNumber: this.generateColombianPhone(),
       legalId: this.generateLegalId(legalIdType),
@@ -61,16 +56,15 @@ export class DataGenerator {
   }
 
   static generateAddressData(): GeneratedAddressData {
-    const cityData = faker.random.arrayElement(this.colombianCities);
+    const cityData = faker.helpers.arrayElement(this.colombianCities);
 
     return {
-      addressLine1: `${faker.address.streetAddress()} ${faker.datatype.number({
+      addressLine1: `${faker.location.streetAddress()} ${faker.number.int({
         min: 1,
         max: 200,
-      })}-${faker.datatype.number({ min: 1, max: 99 })}`,
+      })}-${faker.number.int({ min: 1, max: 99 })}`,
       city: cityData.city,
-      region: cityData.region,
-      phoneNumber: this.generateColombianPhone(),
+      department: cityData.region,
       country: "CO",
     };
   }
@@ -97,37 +91,31 @@ export class DataGenerator {
   private static generateColombianPhone(): string {
     // Generate Colombian mobile number (starts with 3)
     const prefix = "3";
-    const rest = faker.datatype.number({ min: 100000000, max: 999999999 });
+    const rest = faker.number.int({ min: 100000000, max: 999999999 });
     return `${prefix}${rest}`;
   }
 
   private static generateLegalId(type: "CC" | "CE" | "NIT" | "PP"): string {
     switch (type) {
       case "CC": // Cédula de ciudadanía (6-10 digits)
-        return faker.datatype
-          .number({ min: 1000000, max: 9999999999 })
-          .toString();
+        return faker.number.int({ min: 1000000, max: 9999999999 }).toString();
       case "CE": // Cédula de extranjería (6-7 digits)
-        return faker.datatype.number({ min: 100000, max: 9999999 }).toString();
+        return faker.number.int({ min: 100000, max: 9999999 }).toString();
       case "NIT": // NIT (9-10 digits)
-        return faker.datatype
-          .number({ min: 100000000, max: 9999999999 })
-          .toString();
+        return faker.number.int({ min: 100000000, max: 9999999999 }).toString();
       case "PP": // Passport
-        return faker.random.alphaNumeric(8).toUpperCase();
+        return faker.string.alphanumeric(8).toUpperCase();
       default:
-        return faker.datatype
-          .number({ min: 1000000, max: 9999999999 })
-          .toString();
+        return faker.number.int({ min: 1000000, max: 9999999999 }).toString();
     }
   }
 
   static generateCompanyData() {
-    const companyName = faker.company.companyName();
+    const companyName = faker.company.name();
 
     return {
       customerData: {
-        email: faker.internet.email(companyName).toLowerCase(),
+        email: faker.internet.email({ firstName: companyName }).toLowerCase(),
         fullName: `${companyName} SAS`,
         phoneNumber: this.generateColombianPhone(),
         phoneNumberPrefix: "+57",

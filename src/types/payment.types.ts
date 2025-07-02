@@ -26,11 +26,10 @@ export interface CustomerData {
 }
 
 export interface ShippingAddress {
-  addressLine1: string;
+  addressLine1?: string;
   addressLine2?: string;
   city: string;
-  region: string;
-  phoneNumber: string;
+  department: string;
   country: string;
   postalCode?: string;
 }

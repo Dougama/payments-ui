@@ -39,8 +39,7 @@ export function CheckoutPage() {
     shippingAddress: {
       addressLine1: "",
       city: "",
-      region: "",
-      phoneNumber: "",
+      department: "",
       country: "Colombia",
     },
   });
@@ -480,11 +479,11 @@ export function CheckoutPage() {
               Departamento *
             </label>
             <input
-              id="region"
-              name="region"
+              id="department"
+              name="department"
               type="text"
               className="form-input"
-              value={formData.shippingAddress.region}
+              value={formData.shippingAddress.department}
               onChange={handleAddressChange}
               required
             />
@@ -499,7 +498,7 @@ export function CheckoutPage() {
               name="phoneNumber"
               type="tel"
               className="form-input"
-              value={formData.shippingAddress.phoneNumber}
+              value={formData.customerData.phoneNumber}
               onChange={handleAddressChange}
               required
             />
