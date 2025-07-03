@@ -201,7 +201,7 @@ export function PaymentResultPage() {
           <div className="card-header">
             <h3 className="card-title">Estado de la Transacción</h3>
           </div>
-          <div>
+          <div className="card-body">
             <p>
               <strong>Estado:</strong>
               <span
@@ -209,139 +209,159 @@ export function PaymentResultPage() {
                 ${transactionStatus.status === "APPROVED" ? "text-success" : ""}
                 ${transactionStatus.status === "DECLINED" ? "text-error" : ""}
                 ${transactionStatus.status === "PENDING" ? "text-warning" : ""}
+                ${transactionStatus.status === "ERROR" ? "text-error" : ""}
               `}
               >
-                {transactionStatus.status}
+                {" " + transactionStatus.status}
               </span>
             </p>
             <p>
-              <strong>ID de transacción:</strong>{" "}
-              {transactionStatus.id || transactionIdFromUrl}
+              <strong>ID de Transacción:</strong> {transactionStatus.id}
             </p>
             <p>
               <strong>Referencia:</strong> {transactionStatus.reference}
             </p>
+            <p>
+              <strong>Monto:</strong> $
+              {(transactionStatus.amount_in_cents / 100).toLocaleString(
+                "es-CO"
+              )}{" "}
+              COP
+            </p>
+            {transactionStatus.payment_method && (
+              <p>
+                <strong>Método de pago:</strong>{" "}
+                {transactionStatus.payment_method.type}
+                {transactionStatus.payment_method.extra && (
+                  <span>
+                    {" "}
+                    ({transactionStatus.payment_method.extra.brand || ""} ****
+                    {transactionStatus.payment_method.extra.last_four || ""})
+                  </span>
+                )}
+              </p>
+            )}
           </div>
         </div>
       )}
 
-      <div className="card mb-3">
-        <div className="card-header">
-          <h3 className="card-title">Información de la transacción</h3>
-        </div>
-        <div>
-          <p>
-            <strong>ID de transacción:</strong>{" "}
-            {transactionIdFromUrl ||
-              paymentData.transactionId ||
-              transaction.id ||
-              "N/A"}
-          </p>
-          <p>
-            <strong>Referencia:</strong> {reference || "N/A"}
-          </p>
-          {transaction.amount_in_cents && (
-            <p>
-              <strong>Monto:</strong> $
-              {(transaction.amount_in_cents / 100).toLocaleString("es-CO")} COP
-            </p>
-          )}
-        </div>
-      </div>
-
-      {error && (
-        <Alert type="error" message={error} onClose={() => setError("")} />
-      )}
-      {success && (
-        <Alert
-          type="success"
-          message={success}
-          onClose={() => setSuccess("")}
-        />
-      )}
-
-      <div
-        style={{
-          display: "flex",
-          gap: "1rem",
-          flexDirection: "column",
-          maxWidth: "600px",
-          margin: "0 auto",
-        }}
-      >
-        {/* Solo mostrar el botón de verificar si no se verificó automáticamente */}
-        {!transactionStatus && transactionIdFromUrl && (
-          <button
-            onClick={() =>
-              checkTransactionAutomatically(
-                transactionIdFromUrl,
-                reference || ""
-              )
-            }
-            className="btn btn-primary btn-block"
-            disabled={loading || !reference}
-          >
-            {loading ? (
-              <span className="spinner" />
-            ) : (
-              "Verificar Estado de Transacción"
+      {/* Mostrar información del usuario si está disponible */}
+      {checkResponse?.data?.user?.customerData && (
+        <div className="card mb-3">
+          <div className="card-header">
+            <h3 className="card-title">Información del Cliente</h3>
+          </div>
+          <div className="card-body">
+            {checkResponse.data.user.customerData.firstName &&
+              checkResponse.data.user.customerData.lastName && (
+                <p>
+                  <strong>Nombre completo:</strong>{" "}
+                  {checkResponse.data.user.customerData.firstName}{" "}
+                  {checkResponse.data.user.customerData.lastName}
+                </p>
+              )}
+            {checkResponse.data.user.customerData.email && (
+              <p>
+                <strong>Email:</strong>{" "}
+                {checkResponse.data.user.customerData.email}
+              </p>
             )}
+            {checkResponse.data.user.customerData.phoneNumber && (
+              <p>
+                <strong>Teléfono:</strong>{" "}
+                {checkResponse.data.user.customerData.phoneNumberPrefix || ""}{" "}
+                {checkResponse.data.user.customerData.phoneNumber}
+              </p>
+            )}
+            {checkResponse.data.user.customerData.legalId && (
+              <p>
+                <strong>Documento:</strong>{" "}
+                {checkResponse.data.user.customerData.legalIdType || ""}{" "}
+                {checkResponse.data.user.customerData.legalId}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Mostrar información de dirección de envío si está disponible */}
+      {checkResponse?.data?.user?.shippingAddress && (
+        <div className="card mb-3">
+          <div className="card-header">
+            <h3 className="card-title">Dirección de Envío</h3>
+          </div>
+          <div className="card-body">
+            {checkResponse.data.user.shippingAddress.addressLine1 && (
+              <p>
+                <strong>Dirección:</strong>{" "}
+                {checkResponse.data.user.shippingAddress.addressLine1}
+              </p>
+            )}
+            {checkResponse.data.user.shippingAddress.city && (
+              <p>
+                <strong>Ciudad:</strong>{" "}
+                {checkResponse.data.user.shippingAddress.city}
+              </p>
+            )}
+            {checkResponse.data.user.shippingAddress.region && (
+              <p>
+                <strong>Región/Estado:</strong>{" "}
+                {checkResponse.data.user.shippingAddress.region}
+              </p>
+            )}
+            {checkResponse.data.user.shippingAddress.country && (
+              <p>
+                <strong>País:</strong>{" "}
+                {checkResponse.data.user.shippingAddress.country}
+              </p>
+            )}
+            {checkResponse.data.user.shippingAddress.phoneNumber && (
+              <p>
+                <strong>Teléfono de contacto:</strong>{" "}
+                {checkResponse.data.user.shippingAddress.phoneNumber}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Mostrar alertas */}
+      {error && <Alert type="error" message={error} />}
+      {success && <Alert type="success" message={success} />}
+
+      {/* Botón para simular webhook (solo en desarrollo) */}
+      {process.env.NODE_ENV === "development" && (
+        <div className="mt-4">
+          <button
+            onClick={simulateWebhook}
+            disabled={loading}
+            className="btn btn-secondary"
+          >
+            {loading ? "Simulando..." : "Simular Webhook"}
           </button>
-        )}
+        </div>
+      )}
 
-        <button
-          onClick={simulateWebhook}
-          className="btn btn-secondary btn-block"
-          disabled={loading}
-        >
-          {loading ? <span className="spinner" /> : "Simular Webhook de Wompi"}
-        </button>
-
-        <button
-          onClick={() => navigate("/")}
-          className="btn btn-outline btn-block"
-        >
-          Volver al inicio
-        </button>
-      </div>
-
+      {/* Mostrar respuesta del webhook si existe */}
       {webhookResponse && (
-        <div className="card mt-4">
+        <div className="card mt-3">
           <div className="card-header">
             <h3 className="card-title">Respuesta del Webhook</h3>
           </div>
-          <pre
-            style={{
-              background: "#f5f5f5",
-              padding: "1rem",
-              borderRadius: "4px",
-              overflow: "auto",
-              fontSize: "0.875rem",
-            }}
-          >
-            {JSON.stringify(webhookResponse, null, 2)}
-          </pre>
+          <div className="card-body">
+            <pre style={{ fontSize: "0.875rem", whiteSpace: "pre-wrap" }}>
+              {JSON.stringify(webhookResponse, null, 2)}
+            </pre>
+          </div>
         </div>
       )}
 
-      {checkResponse && (
-        <div className="card mt-4">
-          <div className="card-header">
-            <h3 className="card-title">Respuesta de Verificación</h3>
-          </div>
-          <pre
-            style={{
-              background: "#f5f5f5",
-              padding: "1rem",
-              borderRadius: "4px",
-              overflow: "auto",
-              fontSize: "0.875rem",
-            }}
-          >
-            {JSON.stringify(checkResponse, null, 2)}
-          </pre>
-        </div>
-      )}
+      {/* Botones de navegación */}
+      <div className="mt-4 text-center">
+        <button onClick={() => navigate("/")} className="btn btn-primary">
+          Volver al inicio
+        </button>
+      </div>
     </div>
   );
 }
